@@ -1,24 +1,42 @@
+#kernel settings for kubernetes Networking
+
+add cri.conf in /etc/sysctl.d/ and reboot the system
+
 #general setup
 
 source <(kubectl completion bash)
 
 #important port 
 
-Api 6443
+api 6443
 etcd 2379,2380
 kubelet 10250
+
+#start controlplane
+
+//generate kubeadm init config.yaml 
+kubeadm config print init-defaults > config.yaml
+
+kubeadm init or kubeadm init --config config.yaml
 
 #Networking Add On
 
 kubectl get pods -n kube-system
 kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
-curl https://raw.githubusercontent.com/projectcalico/calico/v3.31.2/manifests/calico.yaml -O
 
 #Adding Node to Cluster
 
 //lost join token?
 //will generate pki
+
 sudo kubeadm token create --print-join-command
+
+# use generated kubeadm token on worker node
+
 //donot forget to add --node-name option in kubeadm
 
+#in controlplane   
+
 kubectl get nodes
+
+

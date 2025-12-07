@@ -1,0 +1,28 @@
+Question 1
+During cluster initialization, your kubeadm init command fails at the preflight phase. As a systems administrator, which component should you investigate first to resolve connectivity issues between cluster nodes?
+
+Network Connectivity
+The content emphasizes that network connectivity between nodes is a critical requirement for Kubernetes cluster initialization, and failure to establish proper network communication can prevent successful preflight checks.
+
+Question 2
+After running kubeadm init successfully, you notice that CoreDNS pods remain in a pending state. What critical cluster component must be configured next to resolve this issue?
+
+Network Plugin
+The content explicitly states that CoreDNS pods will remain in a pending state until a network plugin is deployed to configure the pod network, which is a critical step after cluster initialization.
+
+Question 3
+Your development team needs to understand the container architecture. Which component serves as the standardized interface that allows different container runtimes to work with Kubernetes?
+
+Container Network Interface (CNI)
+The Open Containers Initiative (OCI) ensures standardization through the Container Network Interface (CNI), which provides a generic interface enabling different container runtimes to work seamlessly with Kubernetes.
+
+Question 4
+You are tasked with setting up a production Kubernetes cluster for your organization. What is the minimum RAM requirement per node that you must provision to ensure kubeadm can successfully initialize the control plane?
+
+According to the content, kubeadm requires at least 2GB of RAM on control plane nodes to successfully initialize and run Kubernetes cluster components effectively.
+
+Question 5
+When evaluating network plugins for your production environment, your security team requires support for Network Policy enforcement to implement microsegmentation. Based on the available options, which network plugin would you recommend that provides comprehensive feature support including Network Policy capabilities?
+
+Calico
+Calico is explicitly described in the content as 'probably the most common network plugin with support for all relevant features', which directly addresses the requirement for comprehensive Network Policy support for microsegmentation
