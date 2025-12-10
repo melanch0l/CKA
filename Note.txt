@@ -11,6 +11,7 @@ source <(kubectl completion bash)
 api 6443
 etcd 2379,2380
 kubelet 10250
+calico 179
 
 #start controlplane
 
@@ -39,4 +40,136 @@ sudo kubeadm token create --print-join-command
 
 kubectl get nodes
 
+#Analyzing Cluster Node
 
+kubectl describe node $nodename
+
+journalctl -u kubelet.service
+
+//crictl setup 
+
+/etc/crictl.yaml
+runtime-endpoint:"unix:///var/run/containerd/containerd.sock" //use  ur own endpoint if containerd is not ur runtime
+image-endpoint:""
+
+//command
+
+sudo crictl pods
+
+sudo crictl ps
+
+sudo crictl inspect $containerID
+
+sudo crictl images
+
+//run static pods
+
+/etc/kubernetes/manifests/
+
+vim /etc/kubernetes/manifests/staticpod.yaml
+
+//Managing Node State
+
+ kubectl get nodes
+
+ kubectl cordon worker1
+
+ kubectl describe nodes worker1
+
+ //Taints:node-role.kubernetes.io/control-plane:NoSchedule (Manual Taint on Control Node)
+
+ //Metrics Server installation
+
+ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+ kubectl logs -n kube-system metrics-server
+
+ kubectl edit deployments.apps -n kube-system metrics-server
+
+ add "--kubelet-insecure-tls" in args
+
+ https://medium.com/@cloudspinx/fix-error-metrics-api-not-available-in-kubernetes-aa10766e1c2f
+
+ kubectl top pods -A
+
+//Backup ETCD 2379
+
+sudo apt install etcd-client
+
+//Wrong API 
+//Obtain key 
+
+sudo ls /etc/kubernetes/pki/etcd/
+ps aux | grep etcd 
+
+//test connection
+
+sudo etcdctl --endpoints=localhost:2379 --cacert="/etc/kubernetes/pki/etcd/ca.crt" --cert="/etc/kubernetes/pki/etcd/server.crt" --key="/etc/kubernetes/pki/etcd/server.key" get / --prefix --keys-only
+
+sudo etcdctl --endpoints=localhost:2379 --cacert="/etc/kubernetes/pki/etcd/ca.crt" --cert="/etc/kubernetes/pki/etcd/server.crt" --key="/etc/kubernetes/pki/etcd/server.key" snapshot save /tmp/etcdbackup.db
+
+//check backup is ok
+
+sudo etcdctl --write-out=table snapshot status /tmp/etcdbackup.db
+
+//Restore ETCD
+
+//mv staticpod manifest some where for stopping etcd server
+
+sudo mv /etc/kubernetes/manifests/*yaml /etc/kubetenetes/staticpod/
+
+//check whether static pod are stopped by kubelet
+
+sudo crictl ps 
+
+// move etcd to somewhere
+
+sudo /var/lib/etcd /var/lib/etcd-old
+
+//Restore with backup 
+
+sudo etcdctl snapshot restore /tmp/etcdbackup.db --data-dri /var/lib/etcd
+
+//Move static Pod file back to /etc/kubernetes/manifests/
+
+//check static pod are restarted or not with crictl
+
+sudo crictl ps 
+
+//cluster upgrading does not support skipping minor version and need to update kubernetes apt source list
+
+//upgrade control node
+
+sudo apt-cache madison kubeadm
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.34.3-1.1' && \
+sudo apt-mark hold kubeadm
+kubeadm upgrade plan
+kubeadm upgrade apply v1.33.7
+
+//upgrade kubelet and kubectl
+
+kubeadm drain controlnode --ignore-daemonsets //remove all current work from control node
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.34.3-1.1' kubectl='1.34.3-1.1' && \
+sudo apt-mark hold kubelet kubectl
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+//upgard worker node: donot drain all worker at the same time
+
+sudo apt-cache madison kubeadm
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.34.3-1.1' && \
+sudo apt-mark hold kubeadm
+kubeadm upgrade plan
+
+//upgrade kubelet and kubectl
+
+kubeadm drain <controlnode or workernode> --ignore-daemonsets //remove all current work from control node
+
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.34.3-1.1' kubectl='1.34.3-1.1' && \
+sudo apt-mark hold kubelet kubectl
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
